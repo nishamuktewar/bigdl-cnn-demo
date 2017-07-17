@@ -58,7 +58,7 @@ object VGG16NetCaltech {
     model.add(Linear(4096, 4096).setName("fc7"))
     model.add(ReLU(true).setName("relu7"))
     model.add(Dropout(0.5).setName("drop7"))
-    model.add(Linear(4096, classNum).setName("fc8_caltech256"))
+    model.add(Linear(4096, classNum).setName("fc8_caltech256")) // Renaming the last FC layer
     model.add(LogSoftMax().setName("loss"))
     model
   }

@@ -16,7 +16,7 @@ object FineTuneTest {
   def main(args: Array[String]): Unit = {
     Utils.testParser.parse(args, Utils.TestParams()).foreach { param =>
 
-      val conf = Engine.createSparkConf().setAppName("BigDL: Testing fine-tuned model")
+      val conf = Engine.createSparkConf().setAppName("BigDL: Testing fine-tuned VGG16 model")
       val sc = new SparkContext(conf)
       sc.hadoopConfiguration.set("mapreduce.input.fileinputformat.input.dir.recursive", "true")
 
