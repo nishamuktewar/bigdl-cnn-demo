@@ -35,6 +35,8 @@ Download VGG16 model and the model definition file from here: https://gist.githu
   - momentum: default 0.9
   - nesterov: enable/ disable nesterov momentum. default false, requires a momentum value and dampening = 0
   - dampening: default 0.0
+- logDir: location to store the training and validation summary results
+- appName: Run name, example - run1. It will create a sub-directory within "logDir" with the name specified
 - checkpoint: location to be specified when you want to save the model & optimization snapshot
 - iteration: the iteration number at which to capture the checkpoint, default 1000
 - model: specify the model snapshot file to be used as the starting point when re-training an existing model (available from prior runs when checkpoint and iteration is specified)
