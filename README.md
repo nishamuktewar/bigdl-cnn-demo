@@ -1,5 +1,4 @@
 # bigdl-cnn-demo
-# bigdl-cnn
 
 ## Setting up BigDL
 
