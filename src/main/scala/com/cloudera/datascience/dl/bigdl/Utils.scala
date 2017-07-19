@@ -1,10 +1,10 @@
 package com.cloudera.datascience.dl.bigdl
 
-import javax.imageio.ImageIO
-import com.intel.analytics.bigdl.dataset.ByteRecord
 import org.apache.spark.SparkContext
 import scopt.OptionParser
+import com.intel.analytics.bigdl.dataset.ByteRecord
 import com.intel.analytics.bigdl.dataset.image.BGRImage
+import javax.imageio.ImageIO
 
 private[bigdl] object Utils {
 
@@ -21,12 +21,15 @@ private[bigdl] object Utils {
         val bufferedImage = ImageIO.read(inputStream)
         inputStream.close()
         val byteImage = BGRImage.resizeImage(bufferedImage, imageSize, imageSize)
-        ByteRecord(byteImage, label)
+        (byteImage, label)
       }
     }.coalesce(numNodes*numCores, true).coalesce(numNodes, false)
 
-    println(s"Num of partitions: ${jpegs.partitions.length}")
-    jpegs.collect()
+    // Randomize the data for mini batches
+    val jpegs2 = jpegs.sample(withReplacement = false, 1.0, seed=123)
+      .map { case(i, l) => ByteRecord(i, l) }
+    println(s"Num of partitions: ${jpegs2.partitions.length}")
+    jpegs2.collect()
   }
 
   case class TrainParams(

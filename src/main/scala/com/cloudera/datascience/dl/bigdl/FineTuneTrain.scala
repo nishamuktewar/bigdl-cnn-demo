@@ -72,7 +72,6 @@ object FineTuneTrain {
             nesterov = param.nesterov
           )
         }
-
         // Setup distributed training, provide model, training data and loss function
         RandomGenerator.RNG.setSeed(123)
         val optimizer = Optimizer(
@@ -88,8 +87,8 @@ object FineTuneTrain {
 
         // Enable visualization with TensorBoard
         val trainSummary = TrainSummary(param.logDir, param.appName)
-        // As Collecting parameters will slow down the training, it's disabled by default.
-        trainSummary.setSummaryTrigger("Parameters", Trigger.severalIteration(20))
+        // Collecting parameters will slow down the training, it's disabled by default.
+        //trainSummary.setSummaryTrigger("Parameters", Trigger.severalIteration(20))
         val validationSummary = ValidationSummary(param.logDir, param.appName)
         optimizer.setTrainSummary(trainSummary)
         optimizer.setValidationSummary(validationSummary)
