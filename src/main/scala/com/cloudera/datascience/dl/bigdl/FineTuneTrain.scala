@@ -4,12 +4,12 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.SparkContext
 
 import com.intel.analytics.bigdl.dataset.image._
-import com.intel.analytics.bigdl.numeric.NumericFloat
-import com.intel.analytics.bigdl.utils.LoggerFilter
-import com.intel.analytics.bigdl.example.imageclassification.RowToByteRecords
 import com.intel.analytics.bigdl.dataset.DataSet
+import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.nn.{ClassNLLCriterion, Module}
+import com.intel.analytics.bigdl.utils.LoggerFilter
 import com.intel.analytics.bigdl.utils.{Engine, RandomGenerator}
+import com.intel.analytics.bigdl._
 import com.intel.analytics.bigdl.optim.{OptimMethod, Optimizer, SGD, Top1Accuracy, Top5Accuracy, Trigger}
 import com.intel.analytics.bigdl.visualization.{TrainSummary, ValidationSummary}
 
@@ -23,34 +23,22 @@ object FineTuneTrain {
       val conf = Engine.createSparkConf().setAppName("BigDL: Training CNN utilizing pre-trained VGG16 model")
       val sc = new SparkContext(conf)
       sc.hadoopConfiguration.set("mapreduce.input.fileinputformat.input.dir.recursive", "true")
-
       // Set environment variables and verify them
       Engine.init
       try {
         // Read training data images and transform them
-       /* val trainSet = DataSet.array(Utils.readJpegs(sc, param.trainFolder, param.imageSize, param.numNodes, param.numCores), sc) ->
-          BytesToBGRImg() ->
-          BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
-          BGRImgToBatch(param.batchSize)*/
-
-        // Read training data images and transform them
-        val trainSet2 = DataSet.rdd(Utils.readJpegs2(sc, param.trainFolder, param.imageSize)) ->
+        val trainSet = DataSet.rdd(Utils.readJpegs(sc, param.trainFolder, param.imageSize)) ->
           BytesToBGRImg() ->
           BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
           BGRImgToBatch(param.batchSize)
 
         // Read validation data images and transform them
-        /*val valSet = DataSet.array(Utils.readJpegs(sc, param.valFolder, param.imageSize, param.numNodes, param.numCores), sc) ->
-          BytesToBGRImg() ->
-          BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
-          BGRImgToBatch(param.batchSize)*/
-
-        val valSet2 = DataSet.rdd(Utils.readJpegs2(sc, param.valFolder, param.imageSize)) ->
+        val valSet = DataSet.rdd(Utils.readJpegs(sc, param.valFolder, param.imageSize)) ->
           BytesToBGRImg() ->
           BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
           BGRImgToBatch(param.batchSize)
 
-        // Create model
+        // Load model snapshot file if available or load a pre-trained model
         val model = if (param.modelSnapshot.isDefined) {
           println("loading saved model snapshot...")
           Module.load[Float](param.modelSnapshot.get)
@@ -68,8 +56,16 @@ object FineTuneTrain {
             case _ => throw new IllegalArgumentException(s"${param.modelName}")
           }
         }
+        
+        // Setup distributed training, provide model, training data and loss function
+        RandomGenerator.RNG.setSeed(123)
+        val optimizer = Optimizer(
+          model = model,
+          dataset = trainSet,
+          criterion = new ClassNLLCriterion[Float]()
+        )
 
-        // set hyperparameters
+        // Set hyperparameters for training
         val optim = if (param.optimSnapshot.isDefined) {
           println("loading saved optim method snapshot...")
           OptimMethod.load[Float](param.optimSnapshot.get)
@@ -79,19 +75,12 @@ object FineTuneTrain {
             learningRateDecay = param.learningRateDecay,
             weightDecay = param.weightDecay,
             momentum = param.momentum,
+            // After every 20 epochs reduce the learning rate by 0.1
             learningRateSchedule = SGD.EpochStep(20, 0.1),
             dampening = param.dampening,
             nesterov = param.nesterov
           )
         }
-        import com.intel.analytics.bigdl._
-        // Setup distributed training, provide model, training data and loss function
-        RandomGenerator.RNG.setSeed(123)
-        val optimizer = Optimizer(
-          model = model,
-          dataset = trainSet2,
-          criterion = new ClassNLLCriterion[Float]()
-        )
 
         // Setup checkpoint to save the model after "param.iteration"s
         if (param.checkpoint.isDefined) {
@@ -101,7 +90,7 @@ object FineTuneTrain {
         // Enable visualization with TensorBoard
         val trainSummary = TrainSummary(param.logDir, param.appName)
         // Collecting parameters will slow down the training, it's disabled by default.
-        //trainSummary.setSummaryTrigger("Parameters", Trigger.severalIteration(20))
+        trainSummary.setSummaryTrigger("Parameters", Trigger.severalIteration(20))
         val validationSummary = ValidationSummary(param.logDir, param.appName)
         optimizer.setTrainSummary(trainSummary)
         optimizer.setValidationSummary(validationSummary)
@@ -110,7 +99,7 @@ object FineTuneTrain {
         optimizer
           .setOptimMethod(optim)
           // Perform validation after every epoch and output Top1 and Top5 Accuracy
-          .setValidation(Trigger.everyEpoch, valSet2, Array(new Top1Accuracy[Float], new Top5Accuracy[Float]))
+          .setValidation(Trigger.everyEpoch, valSet, Array(new Top1Accuracy[Float], new Top5Accuracy[Float]))
           // Stop after "param.maxEpoch"
           .setEndWhen(Trigger.maxEpoch(param.maxEpoch))
           .optimize()
