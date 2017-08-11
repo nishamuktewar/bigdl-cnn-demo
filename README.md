@@ -57,8 +57,8 @@ curl -L -O https://gist.githubusercontent.com/ksimonyan/211839e770f7b538e2d8/raw
   - dampening: default 0.0
 - logDir: location to store the training and validation summary results
 - appName: Run name, example - run1. It will create a sub-directory within "logDir" with the name specified
-- checkpoint: location to be specified when you want to save the model & optimization snapshot
-- iteration: the iteration number at which to capture the checkpoint, default 1000. If you want to save model snapshot for later use (example, run additional epochs), make sure you specify the checkpoint location along with the "iteration" parameter telling the application where to save the snapshot. In this case, the training sample data has 20,812 records and suppose we want to save the model after training all the observations, then this should be set to 1301 (num of records/ batchSize = 20812/16, round it to the next number
+- checkpoint: location to be specified where you want to save the model & optimization snapshot
+- iteration: the iteration number at which to capture the checkpoint, default 1000. In this case, the training sample data has 20,812 records and suppose we want to save the model after training all the observations, then this should be set to 1301 (num of records/ batchSize = 20812/16, round it to the next number
 - model: specify the model snapshot file to be used as the starting point when re-training an existing model (available from prior runs when checkpoint and iteration is specified)
 - optim: specify the optimization snapshot file to be used as the starting point when re-training an existing model (available from prior runs when checkpoint and iteration is specified)
 ````
