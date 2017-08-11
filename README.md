@@ -84,7 +84,7 @@ spark2-submit \
     --valFolder hdfs:///path/to/256_ObjectCategories/valid/ \
     --classNum 257 \
     --batchSize 16 \
-    --maxEpoch 5 \
+    --maxEpoch 2 \
     --modelName VGG16 \
     --modelPath ./VGG_ILSVRC_16_layers.caffemodel \
     --modelDefPath ./VGG_ILSVRC_16_layers_deploy.prototxt \
