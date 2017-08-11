@@ -6,6 +6,7 @@ import org.apache.spark.SparkContext
 import com.intel.analytics.bigdl.dataset.image._
 import com.intel.analytics.bigdl.numeric.NumericFloat
 import com.intel.analytics.bigdl.utils.LoggerFilter
+import com.intel.analytics.bigdl.example.imageclassification.RowToByteRecords
 import com.intel.analytics.bigdl.dataset.DataSet
 import com.intel.analytics.bigdl.nn.{ClassNLLCriterion, Module}
 import com.intel.analytics.bigdl.utils.{Engine, RandomGenerator}
@@ -27,13 +28,24 @@ object FineTuneTrain {
       Engine.init
       try {
         // Read training data images and transform them
-        val trainSet = DataSet.array(Utils.readJpegs(sc, param.trainFolder, param.numNodes, param.numCores, param.imageSize), sc) ->
+       /* val trainSet = DataSet.array(Utils.readJpegs(sc, param.trainFolder, param.imageSize, param.numNodes, param.numCores), sc) ->
+          BytesToBGRImg() ->
+          BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
+          BGRImgToBatch(param.batchSize)*/
+
+        // Read training data images and transform them
+        val trainSet2 = DataSet.rdd(Utils.readJpegs2(sc, param.trainFolder, param.imageSize)) ->
           BytesToBGRImg() ->
           BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
           BGRImgToBatch(param.batchSize)
 
         // Read validation data images and transform them
-        val valSet = DataSet.array(Utils.readJpegs(sc, param.valFolder, param.numNodes, param.numCores, param.imageSize), sc) ->
+        /*val valSet = DataSet.array(Utils.readJpegs(sc, param.valFolder, param.imageSize, param.numNodes, param.numCores), sc) ->
+          BytesToBGRImg() ->
+          BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
+          BGRImgToBatch(param.batchSize)*/
+
+        val valSet2 = DataSet.rdd(Utils.readJpegs2(sc, param.valFolder, param.imageSize)) ->
           BytesToBGRImg() ->
           BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
           BGRImgToBatch(param.batchSize)
@@ -72,11 +84,12 @@ object FineTuneTrain {
             nesterov = param.nesterov
           )
         }
+        import com.intel.analytics.bigdl._
         // Setup distributed training, provide model, training data and loss function
         RandomGenerator.RNG.setSeed(123)
         val optimizer = Optimizer(
           model = model,
-          dataset = trainSet,
+          dataset = trainSet2,
           criterion = new ClassNLLCriterion[Float]()
         )
 
@@ -97,7 +110,7 @@ object FineTuneTrain {
         optimizer
           .setOptimMethod(optim)
           // Perform validation after every epoch and output Top1 and Top5 Accuracy
-          .setValidation(Trigger.everyEpoch, valSet, Array(new Top1Accuracy[Float], new Top5Accuracy[Float]))
+          .setValidation(Trigger.everyEpoch, valSet2, Array(new Top1Accuracy[Float], new Top5Accuracy[Float]))
           // Stop after "param.maxEpoch"
           .setEndWhen(Trigger.maxEpoch(param.maxEpoch))
           .optimize()

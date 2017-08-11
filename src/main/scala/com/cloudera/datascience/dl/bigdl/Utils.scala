@@ -5,10 +5,11 @@ import scopt.OptionParser
 import com.intel.analytics.bigdl.dataset.ByteRecord
 import com.intel.analytics.bigdl.dataset.image.BGRImage
 import javax.imageio.ImageIO
+import org.apache.spark.rdd.RDD
 
 private[bigdl] object Utils {
 
-  def readJpegs(sc: SparkContext, imagePath: String, numNodes: Int, numCores: Int, imageSize: Int): Array[ByteRecord] = {
+  def readJpegs(sc: SparkContext, imagePath: String, imageSize: Int, numNodes: Int, numCores: Int): Array[ByteRecord] = {
     val jpegs = sc.binaryFiles(imagePath).mapPartitions{ it =>
       it.map { case (path, img) =>
         val regex = ".+\\/(\\d{3})_\\d{4}\\.jpg".r
@@ -25,11 +26,34 @@ private[bigdl] object Utils {
       }
     }.coalesce(numNodes*numCores, true).coalesce(numNodes, false)
 
+
     // Randomize the data for mini batches
     val jpegs2 = jpegs.sample(withReplacement = false, 1.0, seed=123)
       .map { case(i, l) => ByteRecord(i, l) }
-    println(s"Num of partitions: ${jpegs2.partitions.length}")
+    //println(s"Num of partitions: ${jpegs2.partitions.length}")
     jpegs2.collect()
+  }
+
+  def readJpegs2(sc: SparkContext, imagePath: String, imageSize: Int): RDD[ByteRecord] = {
+    val jpegs = sc.binaryFiles(imagePath).mapPartitions{ it =>
+      it.map { case (path, img) =>
+        val regex = ".+\\/(\\d{3})_\\d{4}\\.jpg".r
+        val label = path match {
+          case regex(l) => l.toFloat
+          case _ =>
+            throw new IllegalArgumentException(s"Could not parse label from path: $path")
+        }
+        val inputStream = img.open()
+        val bufferedImage = ImageIO.read(inputStream)
+        inputStream.close()
+        val byteImage = BGRImage.resizeImage(bufferedImage, imageSize, imageSize)
+        (byteImage, label)
+      }
+    }
+    // Randomize the data for mini batches
+    val jpegs2 = jpegs.sample(withReplacement = false, 1.0, seed=123)
+      .map { case(i, l) => ByteRecord(i, l) }
+    jpegs2
   }
 
   case class TrainParams(

@@ -23,7 +23,7 @@ object FineTuneTest {
       Engine.init
 
       val validationSet =
-        DataSet.array(Utils.readJpegs(sc, param.folder, param.numNodes, param.numCores, param.imageSize), sc) ->
+        DataSet.array(Utils.readJpegs(sc, param.folder, param.imageSize, param.numNodes, param.numCores), sc) ->
           BytesToBGRImg() ->
           BGRImgNormalizer(104, 117, 123, 1, 1, 1) ->
           BGRImgToBatch(param.batchSize)
