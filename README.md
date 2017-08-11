@@ -2,12 +2,12 @@
 
 ## Setting up BigDL
 
-This project uses an as-yet-unreleased version 0.2.0 of BigDL. To use it, you must first download and build BigDL.
+This project uses an as-yet-unreleased version 0.3.0 of BigDL. To use it, you must first download and build BigDL.
 
 ```
 git clone https://github.com/intel-analytics/BigDL
 cd BigDL
-mvn -DskipTests -Pspark_2.x clean install
+mvn -DskipTests -Dspark.version=2.2.0 -Pspark_2.x clean install
 ```
 
 ## Running models
@@ -48,13 +48,14 @@ Download VGG16 model and the model definition file from here: https://gist.githu
 - Validation result: Top1Accuracy 48%, Top5Accuracy 70%
 
 #### Notes: 
-- Source bigdl before the spark-submit command, this might go away in future
+- Build using local BigDL 
+```
+mvn -Dspark.version=2.2.0.cloudera1 clean package
+```
 - Saving model and optimization snapshot files
  - If you want to save model snapshot for later use (example, run additional epochs), make sure you specify the checkpoint location along with the "iteration" parameter telling the application where to save the snapshot. In this case, the training sample data has 20,812 records and suppose we want to save the model after training all the observations, then this should be set to 1301 (num of records/ batchSize = 20812/16, round it to the next number)
 
 ````
-. bigdl.sh 
-
 spark2-submit \
  --master yarn --deploy-mode client \
  --executor-memory 25g \
@@ -89,7 +90,7 @@ spark2-submit \
     --nesterov true \
     --dampening 0.0 \
     --logDir /home/nisha/Projects/bigdl-cnn-demo/logs \
-    --appName epochs5 \
+    --appName run1 \
     --iteration 1301 \
     --checkpoint ./bigdl-models
 ````
@@ -124,15 +125,13 @@ spark2-submit \
     --model ./bigdl-models/20170717_154249/model.2602 \
     --optim ./bigdl-models/20170717_154249/optimMethod.2602 \
     --logDir /home/nisha/Projects/bigdl-cnn-demo/logs \
-    --appName epochs5 \
+    --appName run1 \
     --iteration 1301 \
     --checkpoint ./bigdl-models
 ````
 
 ### Testing model performance on test/ validation set
 ````
-. bigdl.sh
-
 spark2-submit \
  --master yarn --deploy-mode client \
  --executor-memory 16g \
