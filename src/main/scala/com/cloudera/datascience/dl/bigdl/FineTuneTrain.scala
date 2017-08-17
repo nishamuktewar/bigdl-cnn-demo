@@ -56,7 +56,7 @@ object FineTuneTrain {
             case _ => throw new IllegalArgumentException(s"${param.modelName}")
           }
         }
-        
+
         // Setup distributed training, provide model, training data and loss function
         RandomGenerator.RNG.setSeed(123)
         val optimizer = Optimizer(

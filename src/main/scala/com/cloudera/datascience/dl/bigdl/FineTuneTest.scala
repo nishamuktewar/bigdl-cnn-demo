@@ -33,7 +33,9 @@ object FineTuneTest {
       val validator = Validator(model, testSet)
 
       val result = validator.test(Array(new Top1Accuracy[Float], new Top5Accuracy[Float]))
-      result.foreach(r => println(s"${r._2} is ${r._1}"))
+      result.foreach{
+        case (value, metric) => println(s"$metric is $value")
+      }
     }
   }
 }
