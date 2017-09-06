@@ -2,6 +2,7 @@
 
 ## Setting up BigDL
 This project uses an as-yet-unreleased version 0.3.0 of BigDL. To use it, you must first download and build BigDL.
+NOTE: Once the 0.2.1 of BigDL is out this actually works with Spark 2.2 
 ```
 git clone https://github.com/intel-analytics/BigDL
 cd BigDL
